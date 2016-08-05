@@ -1,7 +1,16 @@
 package fsapi
 
+import (
+	"time"
+
+	"github.com/IronhandedLayman/icfp-origami/objs"
+)
+
 type FoldServer interface {
 	Hello() (string, error)
-	MakeServerRequest(string, map[string]interface{}) (string, error)
+	GetBlob(string) (string, error)
+	MakeServerRequest(string, []string, objs.M) (string, error)
 	SnapshotListRequest() (string, error)
+	ProblemSubmission(string, time.Time) (string, error)
+	SolutionSubmission(int, string) (string, error)
 }
