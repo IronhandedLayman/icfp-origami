@@ -1,0 +1,239 @@
+REST API Documentation
+
+You can programatically access the contest server with REST APIs.
+Important Notes (Please read carefully!)
+No scraping
+
+You must use the REST APIs described here to access the contest system in automated ways from your program. No automated accesses are allowed via the web interface.
+Rate limits
+
+API requests are rate-limited. You must wait at least 1 second between successive API requests. Also, every API have their own rate limits, as described below in this page. When you exceed these limits, your requests will fail with 429 Rate limit exceeded.
+Gzip requirement
+
+API responses are gzip'ed to save bandwidth. In order to allow the response compression, requests should be marked with Accept-Encoding: gzip. If you are using curl command, you can enable response compression by --compressed option. If you do not set the header, your requests will fail with 400 Bad Request.
+Redirect requirement
+
+API responses may contain Location: header to redirect you to another URL. If you are using curl command, you can enable redirect by -L option.
+No Expect: 100-continue
+
+Some HTTP clients (including curl) use Expect: 100-continue to avoid sending the request body when possible, but our server does not support this protocol. Please make sure to turn off this feature in your client. In the case of curl, you can disable it by -H Expect:. If your requests contain Expect: 100-continue, your requests will mysteriously fail with 502 Bad Gateway without any good diagnostic message.
+Handle errors correctly
+
+Due to infrastructure issues, your request might be rejected even if it is correct. 5xx HTTP response is a transient error, so please try your request again (except for Expect: case described above; though its status code is 502, it is not a transient error). 4xx HTTP response indicates your request was rejected by your fault, so please do not retry immediately.
+API Key
+
+Your team's API key is [REDACTED]. Please make sure to set this API key in X-API-Key header of API requests to authenticate.
+API Overview
+
+The REST API consists of the following five functions:
+
+    Hello, World!
+    Blob Lookup
+    Contest Status Snapshot Query
+    Problem Submission
+    Solution Submission
+
+First of all, try a Hello, World! API call to check if your authentication is working well.
+
+Then, call contest status snapshot query and get a list of snapshot_hashes together with their timestamps. Call blob lookup with the latest snapshot_hash substituted to the [hash] argument. You will get the contest status snapshot, like the following example:
+
+{
+   "problems":[
+      {
+         "ranking":[],
+         "publish_time":1469804400,
+         "solution_size":31,
+         "problem_id":1,
+         "owner":"1",
+         "problem_size":39,
+         "problem_spec_hash":"44f66105e0136a9ea0a4fa4b055c35318ed8840f"
+      },
+      {
+         "ranking":[
+            {
+               "resemblance":1.0,
+               "solution_size":31
+            },
+            {
+               "resemblance":0.957441,
+               "solution_size":1472
+            }
+         ],
+         "publish_time":1469804400,
+         "solution_size":31,
+         "problem_id":2,
+         "owner":"1",
+         "problem_size":39,
+         "problem_spec_hash":"d5cc53ef095f64c04f2d6da3c73e5e5857e8fb74"
+      },
+   ],
+   "snapshot_time":1470096660,
+   "leaderboard":[
+      {
+         "username":"12",
+         "score":13334.670241
+      },
+      {
+         "username":"13",
+         "score":5915.387804
+      },
+      {
+         "username":"16",
+         "score":2953.208622
+      },
+   ],
+   "users":[
+      {
+         "username":"13",
+         "display_name":"Hattori Hanzo"
+      },
+      {
+         "username":"12",
+         "display_name":"Fuma Kotaro"
+      },
+      {
+         "username":"16",
+         "display_name":"Fujita Seiko"
+      }
+   ]
+}
+
+As you can see, a contest status snapshot consists of the following items:
+
+    problems : The list of problems.
+    snapshot_time : The timestamp of this snapshot.
+    leaderboard : The list of usernames together with their scores, in descending order of the score.
+    users : The mapping from the usernames to their choice of display_names.
+    ranking : The anonymous list of the resemblance and the size of the submitted solution.
+
+and a problem item consists of the following items:
+
+    publish_time : The time the problem was published.
+    solution_size : The size of the solution submitted by the problem owner (the team who set this problem).
+    problem_id : The ID of this problem. Specify this ID when you submit your solution to this problem.
+    owner : The username of the problem owner.
+    problem_size : The size of the problem specification.
+    problem_spec_hash : The hash for looking up the specification of this problem.
+
+Call the blob lookup API with the problem_spec_hash as argument to retrieve the contents of the problem. Then, use the solution submission API to submit your solution.
+
+Also, don't forget that you can publish your own problems during the contest, and earn scores from doing so. Use the problem submission API to submit your problems.
+API Reference
+Hello, world!
+
+Just authenticates a request and replies with a fixed message. For debugging purposes.
+Endpoint     http://2016sv.icfpcontest.org/api/hello
+Method     GET
+Rate Limit     1000 requests / hour
+Parameters     No parameter.
+Example     
+
+% curl --compressed -L -H Expect: -H 'X-API-Key: [REDACTED]' 'http://2016sv.icfpcontest.org/api/hello'
+
+{
+  "ok": true,
+  "greeting": "Hello, world!"
+}
+
+Blob Lookup
+
+Looks up a blob (the content of something) by its hash. The hash can be: problem_spec_hash, solution_spec_hash, snapshot_hash, etc.
+Endpoint     http://2016sv.icfpcontest.org/api/blob/[hash]
+Method     GET
+Rate Limit     1000 requests / hour
+Parameters     
+hash     Hash of a blob.
+Example     
+
+% curl --compressed -L -H Expect: -H 'X-API-Key: [REDACTED]' 'http://2016sv.icfpcontest.org/api/blob/f4b1a8567108144bae331340a57c68b85df487e0'
+
+1
+4
+0,0
+1,0
+1/2,1/2
+0,1/2
+5
+0,0 1,0
+0,0 1/2,1/2
+0,0 0,1/2
+0,1/2 1/2,1/2
+1,0 1/2,1/2
+
+Contest Status Snapshot Query
+
+Returns the list of contest information snapshots. Snapshots are computed only once per hour. Use blob lookup API to retrieve actual snapshots by snapshot_hash.
+Endpoint     http://2016sv.icfpcontest.org/api/snapshot/list
+Method     GET
+Rate Limit     1000 requests / hour
+Parameters     No parameter required.
+Example     
+
+% curl --compressed -L -H Expect: -H 'X-API-Key: [REDACTED]' 'http://2016sv.icfpcontest.org/api/snapshot/list'
+
+{
+  "ok": true,
+  "snapshots": [
+    {
+      "snapshot_time": 1470355200,
+      "snapshot_hash": "0123456789abcdef0123456789abcdef"
+    },
+    {
+      "snapshot_time": 1470358800,
+      "snapshot_hash": "fedcba9876543210fedcba9876543210"
+    }
+  ]
+}
+
+Problem Submission
+
+Submits a problem, so that the problem is scheduled to be published at the designated timestamp. If you submit multiple problems with same timestamp, the latest submission will be used.
+Endpoint     http://2016sv.icfpcontest.org/api/problem/submit
+Method     POST
+Rate Limit     1000 requests / hour (the number of requests is the sum of the problem and solution submissions)
+Parameters     
+solution_spec     The specification of a valid and normalized solution that produces the problem you want to submit.
+publish_time     Timestamp of when you want the problem to be published.
+Possible values are:
+
+    1470441600 (2016-08-06 00:00:00 UTC)
+    1470445200 (2016-08-06 01:00:00 UTC)
+    1470448800 (2016-08-06 02:00:00 UTC)
+    ...
+    1470603600 (2016-08-07 21:00:00 UTC)
+
+Requests with invalid publish_time will fail with 403 Forbidden.
+Example     
+
+% curl --compressed -L -H Expect: -H 'X-API-Key: [REDACTED]' -F 'solution_spec=@work/solution.txt' -F 'publish_time=1470441600' 'http://2016sv.icfpcontest.org/api/problem/submit'
+
+{
+  "ok": true,
+  "problem_id": 4,
+  "publish_time": 1475280000,
+  "solution_spec_hash": "27e3c42fa46aec6fcf438bb5c326d55e27c91811",
+  "solution_size": 78,
+  "problem_spec_hash": "f4b1a8567108144bae331340a57c68b85df487e0",
+  "problem_size": 67
+}
+
+Solution Submission
+
+Submits a solution to the specified problem.
+Endpoint     http://2016sv.icfpcontest.org/api/solution/submit
+Method     POST
+Rate Limit     1000 requests / hour (the nubmer of requests is the sum of those of the problem and solution submissions)
+Parameters     
+problem_id     The ID of the problem you are solving.
+solution_spec     The specification of your solution to the problem.
+Example     
+
+% curl --compressed -L -H Expect: -H 'X-API-Key: [REDACTED]' -F 'problem_id=1' -F 'solution_spec=@work/solution.txt' 'http://2016sv.icfpcontest.org/api/solution/submit'
+
+{
+  "ok": true,
+  "problem_id": 1,
+  "resemblance": 1.0,
+  "solution_spec_hash": "27e3c42fa46aec6fcf438bb5c326d55e27c91811",
+  "solution_size": 78
+}
