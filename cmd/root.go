@@ -89,8 +89,4 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
 	}
-	fmt.Printf("Teamid: %s\nApiKey: %s\nWebsite: %s\n",
-		viper.GetString("Teamid"),
-		viper.GetString("ApiKey"),
-		viper.GetString("website"))
 }
