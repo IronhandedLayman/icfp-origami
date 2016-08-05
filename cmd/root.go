@@ -28,16 +28,23 @@ import (
 	"github.com/spf13/viper"
 )
 
-var cfgFile string
+var (
+	cfgFile string
+)
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "icfp-origami",
 	Short: "Sends commands and processes files for the ICFP 2016 competition",
 	Long:  `Sends commands and processes files for the ICFP 2016 competition`,
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Printf("Teamid: %s\nApiKey: %s\nWebsite: %s\n",
+			viper.GetString("Teamid"),
+			viper.GetString("ApiKey"),
+			viper.GetString("website"))
+	},
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
-	//	Run: func(cmd *cobra.Command, args []string) { },
 }
 
 // Execute adds all child commands to the root command sets flags appropriately.
@@ -57,14 +64,13 @@ func init() {
 	// will be global for your application.
 
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.icfp-origami.yaml)")
-	RootCmd.PersistentFlags().StringVarP(&teamid, "teamid", "t", "", "id for team")
-	RootCmd.PersistentFlags().StringVarP(&apiKey, "apiKey", "k", "", "api key to access website")
-	RootCmd.PersistentFlags().StringVarP(&websiteLoc, "website", "h", "", "where to send API requests")
+	RootCmd.PersistentFlags().String("Teamid", "", "id for team")
+	RootCmd.PersistentFlags().String("ApiKey", "", "api key to access website")
+	RootCmd.PersistentFlags().String("website", "", "where to send API requests")
 
-	viper.BindPFlag("teamid", RootCmd.PersistentFlags().Lookup("teamid"))
-	viper.BindPFlag("apiKey", RootCmd.PersistentFlags().Lookup("apiKey"))
-	viper.BindPFlag("website", RootCmd.PersistentFlags().Lookup("website"))
-
+	if berr := viper.BindPFlags(RootCmd.PersistentFlags()); berr != nil {
+		panic(fmt.Sprintf("Error binding flags: %v", berr))
+	}
 	viper.SetDefault("website", "2016sv.icfpcontest.org")
 }
 
@@ -75,6 +81,7 @@ func initConfig() {
 	}
 
 	viper.SetConfigName(".icfp-origami") // name of config file (without extension)
+	viper.SetConfigType("yaml")          // name of config type (extension)
 	viper.AddConfigPath("$HOME")         // adding home directory as first search path
 	viper.AutomaticEnv()                 // read in environment variables that match
 
@@ -82,4 +89,8 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
 	}
+	fmt.Printf("Teamid: %s\nApiKey: %s\nWebsite: %s\n",
+		viper.GetString("Teamid"),
+		viper.GetString("ApiKey"),
+		viper.GetString("website"))
 }
