@@ -22,9 +22,8 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
-	"net/http"
 
+	"github.com/IronhandedLayman/icfp-origami/fsapi"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -41,23 +40,12 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Printf("Sending ping to folding server...\n")
-		client := http.Client{}
-		reqaddr := fmt.Sprintf("http://%s/api/%s", viper.GetString("website"), "hello")
-		req, mrerr := http.NewRequest("GET", reqaddr, nil)
-		if mrerr != nil {
-			panic("CODER ERROR: request malformed")
-		}
-		req.Header.Set("Expect", "")
-		req.Header.Set("X-Api-Key", viper.GetString("ApiKey"))
-		resp, err := client.Do(req)
+		serv := fsapi.NewBasicServer(viper.GetString("website"), viper.GetString("ApiKey"))
+		resp, err := serv.Hello()
 		if err != nil {
-			panic(fmt.Sprintf("Error while requesting: %v", err))
+			panic(fmt.Sprintf("Error while requesting ping: %v", err))
 		}
-		respBody, rerr := ioutil.ReadAll(resp.Body)
-		if rerr != nil {
-			panic(fmt.Sprintf("Error while reading response: %v", err))
-		}
-		fmt.Printf("Response: %s\n", string(respBody))
+		fmt.Printf("Response: %s\n", resp)
 	},
 }
 
