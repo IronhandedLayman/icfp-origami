@@ -18,9 +18,12 @@ func NewBasicServer(pointWhere string, teamapikey string) FoldServer {
 	}
 }
 
-func (fsb *FoldServerBasic) Hello() (string, error) {
+func (fsb *FoldServerBasic) MakeServerRequest(cmdName string, params map[string]interface{}) (string, error) {
 	client := http.Client{}
-	reqaddr := fmt.Sprintf("http://%s/api/%s", fsb.website, "hello")
+	reqaddr := fmt.Sprintf("http://%s/api/%s", fsb.website, cmdName)
+	if params != nil {
+		fmt.Printf("Set of sent params: %#v", params)
+	}
 	req, mrerr := http.NewRequest("GET", reqaddr, nil)
 	if mrerr != nil {
 		return "", fmt.Errorf("CODER ERROR: request malformed")
@@ -36,4 +39,12 @@ func (fsb *FoldServerBasic) Hello() (string, error) {
 		return "", fmt.Errorf("Error while reading response: %v", err)
 	}
 	return string(respBody), nil
+}
+
+func (fsb *FoldServerBasic) Hello() (string, error) {
+	return fsb.MakeServerRequest("hello", nil)
+}
+
+func (fsb *FoldServerBasic) SnapshotListRequest() (string, error) {
+	return fsb.MakeServerRequest("snapshot/list", nil)
 }
