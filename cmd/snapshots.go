@@ -40,7 +40,10 @@ var snapshotsCmd = &cobra.Command{
 		if err != nil {
 			panic(fmt.Sprintf("Error while requesting snapshot list: %v", err))
 		}
-		fmt.Printf("Response: %s\n", resp)
+		fmt.Printf("Response: %s\n", resp.Ok)
+		for _, sh := range resp.Snapshots {
+			fmt.Printf("  Snapshot: %s at %v\n", sh.SnapshotHash, sh.SnapshotTime)
+		}
 	},
 }
 

@@ -1,6 +1,7 @@
 package fsapi
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -68,8 +69,17 @@ func (fsb *FoldServerBasic) Hello() (string, error) {
 	return fsb.MakeServerRequest("GET", []string{"hello"}, nil)
 }
 
-func (fsb *FoldServerBasic) SnapshotListRequest() (string, error) {
-	return fsb.MakeServerRequest("GET", []string{"snapshot", "list"}, nil)
+func (fsb *FoldServerBasic) SnapshotListRequest() (*objs.SnapshotListResponse, error) {
+	srvreq, err := fsb.MakeServerRequest("GET", []string{"snapshot", "list"}, nil)
+	if err != nil {
+		return nil, err
+	}
+	rspObj := objs.SnapshotListResponse{}
+	merr := json.Unmarshal(([]byte)(srvreq), &rspObj)
+	if merr != nil {
+		return nil, merr
+	}
+	return &rspObj, nil
 }
 
 func (fsb *FoldServerBasic) GetBlob(blobHash string) (string, error) {
