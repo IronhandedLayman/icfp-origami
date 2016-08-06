@@ -14,4 +14,5 @@ type FoldServer interface {
 	ProblemSubmission(string, time.Time) (string, error)
 	SolutionSubmission(int, string) (string, error)
 	LatestSnapshot() (*objs.Snapshot, error)
+	Scoreboard() ([]objs.UserState, error)
 }

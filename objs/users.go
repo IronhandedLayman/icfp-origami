@@ -32,6 +32,7 @@ func MergeUserData(nps []UserNameplate, nss []UserScore) []UserState {
 		us := UserState{}
 		(&us).FromUserData(np, preNS[np.Username])
 		ans[i] = us
+		i++
 	}
 	return ans
 }

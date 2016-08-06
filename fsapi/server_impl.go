@@ -22,13 +22,13 @@ func NewBasicServer(pointWhere string, teamapikey string) FoldServer {
 	return &FoldServerBasic{
 		website:     pointWhere,
 		apikey:      teamapikey,
-		lastRequest: time.Now().Add(-1100 * time.Millisecond),
+		lastRequest: time.Now().Add(-2000 * time.Millisecond),
 	}
 }
 
 func (fsb *FoldServerBasic) MakeServerRequest(protocol string, cmdNamePath []string, params objs.M) (string, error) {
 	//rate limit wait
-	waitUntil := fsb.lastRequest.Add(1100 * time.Millisecond)
+	waitUntil := fsb.lastRequest.Add(2000 * time.Millisecond)
 	if waitUntil.After(time.Now()) {
 		time.Sleep(waitUntil.Sub(time.Now()))
 	}
@@ -138,4 +138,16 @@ func (fsb *FoldServerBasic) LatestSnapshot() (*objs.Snapshot, error) {
 		return nil, fmt.Errorf("Error unmarshalling: %v", umerr)
 	}
 	return &snapResp, nil
+}
+
+func (fsb *FoldServerBasic) Scoreboard() ([]objs.UserState, error) {
+	snap, err := fsb.LatestSnapshot()
+	if err != nil {
+		return nil, fmt.Errorf("Could not retrieve snapshot for scoreboard: %v", err)
+	}
+	uservals := objs.MergeUserData(snap.Users, snap.Leaderboard)
+	objs.ByUsers(func(u1, u2 *objs.UserState) bool {
+		return u1.Score > u2.Score
+	}).Sort(uservals)
+	return uservals, nil
 }
