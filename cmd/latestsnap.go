@@ -24,7 +24,6 @@ import (
 	"fmt"
 
 	"github.com/IronhandedLayman/icfp-origami/fsapi"
-	"github.com/IronhandedLayman/icfp-origami/objs"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -35,23 +34,12 @@ var latestsnapCmd = &cobra.Command{
 	Short: "Gets the latest snapshot and returns it to the console",
 	Long:  `Gets the latest snapshot and returns it to the console`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("Sending ping to folding server...\n")
 		serv := fsapi.NewBasicServer(viper.GetString("website"), viper.GetString("ApiKey"))
-		resp, err := serv.SnapshotListRequest()
+
+		fmt.Printf("Sending snapshot list request to folding server...\n")
+		blresp, err := serv.LatestSnapshot()
 		if err != nil {
-			panic(fmt.Sprintf("Error while requesting snapshot list: %v", err))
-		}
-		fmt.Printf("Obtained snapshot list: %s\n", resp.Ok)
-		var lsh *objs.SnapshotHash
-		for _, sh := range resp.Snapshots {
-			if lsh == nil || sh.SnapshotTime.After(lsh.SnapshotTime) {
-				lsh = sh
-			}
-		}
-		fmt.Printf("Obtaining snapshot %v::%s\n", lsh.SnapshotTime, lsh.SnapshotHash)
-		blresp, berr := serv.GetBlob(lsh.SnapshotHash)
-		if berr != nil {
-			panic(fmt.Sprintf("Error obtaining snapshot blob: %v", berr))
+			panic(fmt.Sprintf("Error while retrieving snapshot: %v\n", err))
 		}
 		fmt.Printf("Snapshot Blob: %s\n", blresp)
 	},
@@ -59,5 +47,4 @@ var latestsnapCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(latestsnapCmd)
-
 }

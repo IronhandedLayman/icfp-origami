@@ -108,3 +108,24 @@ func (fsb *FoldServerBasic) SolutionSubmission(problemId int, solution string) (
 		"solution_spec": solution,
 	})
 }
+
+func (fsb *FoldServerBasic) LatestSnapshot() (string, error) {
+	resp, err := fsb.SnapshotListRequest()
+	if err != nil {
+		return "", fmt.Errorf("Error while requesting snapshot list: %v", err)
+	}
+	if !resp.Ok {
+		return "", fmt.Errorf("Server error while requesting snapshot list: %v", resp)
+	}
+	var lsh *objs.SnapshotHash
+	for _, sh := range resp.Snapshots {
+		if lsh == nil || sh.SnapshotTime.After(lsh.SnapshotTime) {
+			lsh = sh
+		}
+	}
+	blresp, berr := fsb.GetBlob(lsh.SnapshotHash)
+	if berr != nil {
+		return "", fmt.Errorf("Error obtaining snapshot blob: %v", berr)
+	}
+	return blresp, nil
+}
