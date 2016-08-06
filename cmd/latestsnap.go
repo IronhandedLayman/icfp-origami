@@ -41,7 +41,7 @@ var latestsnapCmd = &cobra.Command{
 		if err != nil {
 			panic(fmt.Sprintf("Error while retrieving snapshot: %v\n", err))
 		}
-		fmt.Printf("Snapshot Blob: %s\n", blresp)
+		fmt.Printf("Snapshot response: %#v\n", blresp)
 	},
 }
 

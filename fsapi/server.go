@@ -13,5 +13,5 @@ type FoldServer interface {
 	SnapshotListRequest() (*objs.SnapshotListResponse, error)
 	ProblemSubmission(string, time.Time) (string, error)
 	SolutionSubmission(int, string) (string, error)
-	LatestSnapshot() (string, error)
+	LatestSnapshot() (*objs.Snapshot, error)
 }

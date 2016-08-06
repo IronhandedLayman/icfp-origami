@@ -22,13 +22,13 @@ func NewBasicServer(pointWhere string, teamapikey string) FoldServer {
 	return &FoldServerBasic{
 		website:     pointWhere,
 		apikey:      teamapikey,
-		lastRequest: time.Now().Add(-1 * time.Second),
+		lastRequest: time.Now().Add(-1100 * time.Millisecond),
 	}
 }
 
 func (fsb *FoldServerBasic) MakeServerRequest(protocol string, cmdNamePath []string, params objs.M) (string, error) {
 	//rate limit wait
-	waitUntil := fsb.lastRequest.Add(1 * time.Second)
+	waitUntil := fsb.lastRequest.Add(1100 * time.Millisecond)
 	if waitUntil.After(time.Now()) {
 		time.Sleep(waitUntil.Sub(time.Now()))
 	}
@@ -67,9 +67,14 @@ func (fsb *FoldServerBasic) MakeServerRequest(protocol string, cmdNamePath []str
 	if err != nil {
 		return "", fmt.Errorf("Error while requesting: %v", err)
 	}
+
 	respBody, rerr := ioutil.ReadAll(resp.Body)
 	if rerr != nil {
 		return "", fmt.Errorf("Error while reading response: %v", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return "NOK", fmt.Errorf("Server Error %s while making request: %s", resp.Status, respBody)
 	}
 	return string(respBody), nil
 }
@@ -109,13 +114,13 @@ func (fsb *FoldServerBasic) SolutionSubmission(problemId int, solution string) (
 	})
 }
 
-func (fsb *FoldServerBasic) LatestSnapshot() (string, error) {
+func (fsb *FoldServerBasic) LatestSnapshot() (*objs.Snapshot, error) {
 	resp, err := fsb.SnapshotListRequest()
 	if err != nil {
-		return "", fmt.Errorf("Error while requesting snapshot list: %v", err)
+		return nil, fmt.Errorf("Error while requesting snapshot list: %v", err)
 	}
 	if !resp.Ok {
-		return "", fmt.Errorf("Server error while requesting snapshot list: %v", resp)
+		return nil, fmt.Errorf("Server error while requesting snapshot list: %v", resp)
 	}
 	var lsh *objs.SnapshotHash
 	for _, sh := range resp.Snapshots {
@@ -125,7 +130,12 @@ func (fsb *FoldServerBasic) LatestSnapshot() (string, error) {
 	}
 	blresp, berr := fsb.GetBlob(lsh.SnapshotHash)
 	if berr != nil {
-		return "", fmt.Errorf("Error obtaining snapshot blob: %v", berr)
+		return nil, fmt.Errorf("Error obtaining snapshot blob: %v", berr)
 	}
-	return blresp, nil
+	snapResp := objs.Snapshot{}
+	umerr := json.Unmarshal(([]byte)(blresp), &snapResp)
+	if umerr != nil {
+		return nil, fmt.Errorf("Error unmarshalling: %v", umerr)
+	}
+	return &snapResp, nil
 }
