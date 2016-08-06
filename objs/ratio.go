@@ -20,6 +20,10 @@ func NewRatio(n int64, d int64) Ratio {
 	return Ratio{n, d}.Reduced()
 }
 
+func Whole(n int64) Ratio {
+	return Ratio{n, 1}
+}
+
 func (r Ratio) String() string {
 	return fmt.Sprintf("%d/%d", r.Num, r.Den)
 }
@@ -29,7 +33,7 @@ func (r Ratio) ToFloat() float64 {
 }
 
 func ParseRatio(instr string) (Ratio, error) {
-	parts := strings.Split("/", instr)
+	parts := strings.Split(instr, "/")
 	if len(parts) != 2 {
 		return ZeroRatio, fmt.Errorf("Improper division placement")
 	}
