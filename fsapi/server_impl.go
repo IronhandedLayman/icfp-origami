@@ -13,18 +13,27 @@ import (
 )
 
 type FoldServerBasic struct {
-	website string
-	apikey  string
+	website     string
+	apikey      string
+	lastRequest time.Time
 }
 
 func NewBasicServer(pointWhere string, teamapikey string) FoldServer {
 	return &FoldServerBasic{
-		website: pointWhere,
-		apikey:  teamapikey,
+		website:     pointWhere,
+		apikey:      teamapikey,
+		lastRequest: time.Now().Add(-1 * time.Second),
 	}
 }
 
 func (fsb *FoldServerBasic) MakeServerRequest(protocol string, cmdNamePath []string, params objs.M) (string, error) {
+	//rate limit wait
+	waitUntil := fsb.lastRequest.Add(1 * time.Second)
+	if waitUntil.After(time.Now()) {
+		time.Sleep(waitUntil.Sub(time.Now()))
+	}
+	fsb.lastRequest = time.Now()
+
 	cmdName := strings.Join(cmdNamePath, "/")
 	client := http.Client{}
 	informParams := url.Values{}
