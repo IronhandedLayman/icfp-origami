@@ -52,7 +52,7 @@ type UserScore struct {
 	Score    float64 `json:"score"`
 }
 
-type UserNames struct {
+type UserNameplate struct {
 	Username    string `json:"username"`
 	DisplayName string `json:"display_name"`
 }
@@ -76,5 +76,5 @@ type Snapshot struct {
 	Leaderboard  []UserScore
 	Problems     []ProblemHeader
 	SnapshotTime int64
-	Users        []UserNames
+	Users        []UserNameplate
 }
