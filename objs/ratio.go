@@ -75,7 +75,11 @@ func gcd(a int64, b int64) int64 {
 }
 
 func (r Ratio) Reduced() Ratio {
-	g := gcd(r.Num, r.Den)
+	var m int64 = 1
+	if r.Den < 0 {
+		m = -1
+	}
+	g := gcd(r.Num, r.Den) * m
 	if g == 0 {
 		g = 1
 	}

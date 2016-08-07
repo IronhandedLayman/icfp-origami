@@ -28,7 +28,10 @@ import (
 	"github.com/spf13/viper"
 )
 
-var problemId int
+var (
+	problemId int
+	rawSpec   bool
+)
 
 // problemspecCmd represents the problemspec command
 var problemspecCmd = &cobra.Command{
@@ -38,15 +41,25 @@ var problemspecCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		serv := fsapi.NewBasicServer(viper.GetString("website"), viper.GetString("ApiKey"))
 
-		pblob, err := serv.GetProblemSpec(problemId)
-		if err != nil {
-			panic(fmt.Sprintf("Error retrieving problem #%d: %v", problemId, err))
+		if rawSpec {
+			rblob, err := serv.GetRawProblemSpec(problemId)
+			if err != nil {
+				panic(fmt.Sprintf("Error retrieving problem #%d: %v", problemId, err))
+			}
+			fmt.Printf("Raw problem spec:\n%v\n", rblob)
+
+		} else {
+			pblob, err := serv.GetProblemSpec(problemId)
+			if err != nil {
+				panic(fmt.Sprintf("Error retrieving problem #%d: %v", problemId, err))
+			}
+			fmt.Printf("Problem spec:\n%v\n", pblob)
 		}
-		fmt.Printf("Problem spec:\n%v\n", pblob)
 	},
 }
 
 func init() {
 	RootCmd.AddCommand(problemspecCmd)
 	problemspecCmd.PersistentFlags().IntVar(&problemId, "id", 0, "Problem ID of the problem spec to retrieve.")
+	problemspecCmd.PersistentFlags().BoolVar(&rawSpec, "raw", false, "Returns the raw problem spec unparsed.")
 }

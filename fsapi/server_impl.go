@@ -172,10 +172,10 @@ func (fsb *FoldServerBasic) Scoreboard() ([]objs.UserState, error) {
 	return uservals, nil
 }
 
-func (fsb *FoldServerBasic) GetProblemSpec(problemId int) (objs.Problem, error) {
+func (fsb *FoldServerBasic) GetRawProblemSpec(problemId int) (string, error) {
 	blresp, err := fsb.LatestSnapshot()
 	if err != nil {
-		return objs.NoProblem, fmt.Errorf("Error retrieving snapshot: %v", err)
+		return "", fmt.Errorf("Error retrieving snapshot: %v", err)
 	}
 	var nph objs.ProblemHeader
 	for _, ph := range blresp.Problems {
@@ -185,11 +185,19 @@ func (fsb *FoldServerBasic) GetProblemSpec(problemId int) (objs.Problem, error) 
 		}
 	}
 	if nph.ProblemId == 0 {
-		return objs.NoProblem, fmt.Errorf("Could not find problem id %d", problemId)
+		return "", fmt.Errorf("Could not find problem id %d", problemId)
 	}
 	pblob, err := fsb.GetBlob(nph.ProblemSpecHash)
 	if err != nil {
-		return objs.NoProblem, fmt.Errorf("Error retrieving snapshot: %v", err)
+		return "", fmt.Errorf("Error retrieving snapshot: %v", err)
+	}
+	return pblob, nil
+}
+
+func (fsb *FoldServerBasic) GetProblemSpec(problemId int) (objs.Problem, error) {
+	pblob, err := fsb.GetRawProblemSpec(problemId)
+	if err != nil {
+		return objs.NoProblem, fmt.Errorf("Error retrieving raw problem spec: %v", err)
 	}
 	return objs.ParseProblem(pblob)
 }
