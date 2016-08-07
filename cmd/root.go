@@ -43,8 +43,6 @@ var RootCmd = &cobra.Command{
 			viper.GetString("ApiKey"),
 			viper.GetString("website"))
 	},
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
 }
 
 // Execute adds all child commands to the root command sets flags appropriately.
@@ -58,10 +56,6 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initConfig)
-
-	// Here you will define your flags and configuration settings.
-	// Cobra supports Persistent Flags, which, if defined here,
-	// will be global for your application.
 
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.icfp-origami.yaml)")
 	RootCmd.PersistentFlags().String("Teamid", "", "id for team")

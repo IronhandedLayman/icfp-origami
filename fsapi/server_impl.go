@@ -6,6 +6,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
+	"os/user"
+	"path"
 	"strings"
 	"time"
 
@@ -16,17 +19,33 @@ type FoldServerBasic struct {
 	website     string
 	apikey      string
 	lastRequest time.Time
+	cacheDir    string
+	useCache    bool
 }
 
 func NewBasicServer(pointWhere string, teamapikey string) FoldServer {
+	usr, _ := user.Current()
 	return &FoldServerBasic{
 		website:     pointWhere,
 		apikey:      teamapikey,
 		lastRequest: time.Now().Add(-2000 * time.Millisecond),
+		cacheDir:    path.Join(usr.HomeDir, ".icfp-origami-cache"),
+		useCache:    true,
 	}
 }
 
-func (fsb *FoldServerBasic) MakeServerRequest(protocol string, cmdNamePath []string, params objs.M) (string, error) {
+func (fsb *FoldServerBasic) MakeServerRequest(protocol string, cmdNamePath []string, params objs.M, cache bool) (string, error) {
+	cacheFilename := path.Join(fsb.cacheDir, strings.Join(cmdNamePath, "-")+".txt")
+	//can I grab the cache?
+	if fsb.useCache && cache {
+		cfs, err := os.Stat(cacheFilename)
+		if err == nil && cfs.Size() > 0 && (cmdNamePath[0] != "snapshot" || cfs.ModTime().Hour() == time.Now().Hour()) {
+			fmt.Printf("(Reading from cache file %s)\n", cacheFilename)
+			bans, err := ioutil.ReadFile(cacheFilename)
+			return string(bans), err
+		}
+	}
+
 	//rate limit wait
 	waitUntil := fsb.lastRequest.Add(2000 * time.Millisecond)
 	if waitUntil.After(time.Now()) {
@@ -76,15 +95,17 @@ func (fsb *FoldServerBasic) MakeServerRequest(protocol string, cmdNamePath []str
 	if resp.StatusCode != http.StatusOK {
 		return "NOK", fmt.Errorf("Server Error %s while making request: %s", resp.Status, respBody)
 	}
+	//attempt to write cache file, overwriting what is already there
+	ioutil.WriteFile(cacheFilename, respBody, 0666)
 	return string(respBody), nil
 }
 
 func (fsb *FoldServerBasic) Hello() (string, error) {
-	return fsb.MakeServerRequest("GET", []string{"hello"}, nil)
+	return fsb.MakeServerRequest("GET", []string{"hello"}, nil, false)
 }
 
 func (fsb *FoldServerBasic) SnapshotListRequest() (*objs.SnapshotListResponse, error) {
-	srvreq, err := fsb.MakeServerRequest("GET", []string{"snapshot", "list"}, nil)
+	srvreq, err := fsb.MakeServerRequest("GET", []string{"snapshot", "list"}, nil, true)
 	if err != nil {
 		return nil, err
 	}
@@ -97,21 +118,21 @@ func (fsb *FoldServerBasic) SnapshotListRequest() (*objs.SnapshotListResponse, e
 }
 
 func (fsb *FoldServerBasic) GetBlob(blobHash string) (string, error) {
-	return fsb.MakeServerRequest("GET", []string{"blob", blobHash}, nil)
+	return fsb.MakeServerRequest("GET", []string{"blob", blobHash}, nil, true)
 }
 
 func (fsb *FoldServerBasic) ProblemSubmission(solutionSpec string, publishTime time.Time) (string, error) {
 	return fsb.MakeServerRequest("POST", []string{"problem", "submit"}, objs.M{
 		"solution_spec": solutionSpec,
 		"publish_time":  publishTime,
-	})
+	}, false)
 }
 
 func (fsb *FoldServerBasic) SolutionSubmission(problemId int, solution string) (string, error) {
 	return fsb.MakeServerRequest("POST", []string{"solution", "submit"}, objs.M{
 		"problem_id":    problemId,
 		"solution_spec": solution,
-	})
+	}, false)
 }
 
 func (fsb *FoldServerBasic) LatestSnapshot() (*objs.Snapshot, error) {
