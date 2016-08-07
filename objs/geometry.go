@@ -40,12 +40,12 @@ func ParsePoint(instr string) (Point, error) {
 	}
 	xcoord, xerr := ParseRatio(parts[0])
 	if xerr != nil {
-		return Origin, fmt.Errorf("Illegal x-coordinate")
+		return Origin, fmt.Errorf("Illegal x-coordinate: %v", xerr)
 	}
 
 	ycoord, yerr := ParseRatio(parts[1])
 	if yerr != nil {
-		return Origin, fmt.Errorf("Illegal y-coordinate")
+		return Origin, fmt.Errorf("Illegal y-coordinate: %v", yerr)
 	}
 
 	return Point{xcoord, ycoord}, nil
@@ -73,7 +73,7 @@ func ParsePolygon(instr []string) (Polygon, error) {
 	for i := 1; i <= int(np); i++ {
 		ans[i-1], perr = ParsePoint(instr[i])
 		if perr != nil {
-			return nil, fmt.Errorf("Error parsing index #%d", i-1)
+			return nil, fmt.Errorf("Error parsing index #%d: %v", i-1, perr)
 		}
 	}
 	return ans, nil

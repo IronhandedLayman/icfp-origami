@@ -28,25 +28,28 @@ import (
 	"github.com/spf13/viper"
 )
 
-var problemId int
-
-// problemspecCmd represents the problemspec command
-var problemspecCmd = &cobra.Command{
-	Use:   "problemspec",
-	Short: "Gets the problem spec for the problem id and returns it to the console",
-	Long:  `Gets the problem spec for the problem id and returns it to the console`,
+// cacheproblemsCmd represents the cacheproblems command
+var cacheproblemsCmd = &cobra.Command{
+	Use:   "cacheproblems",
+	Short: "Retrieves all problem specifications for easier retrieval later",
+	Long:  `Retrieves all problem specifications for easier retrieval later`,
 	Run: func(cmd *cobra.Command, args []string) {
 		serv := fsapi.NewBasicServer(viper.GetString("website"), viper.GetString("ApiKey"))
 
-		pblob, err := serv.GetProblemSpec(problemId)
+		snap, err := serv.LatestSnapshot()
 		if err != nil {
-			panic(fmt.Sprintf("Error retrieving problem #%d: %v", problemId, err))
+			panic(fmt.Sprintf("Error retrieving latest snapshot:%v", err))
 		}
-		fmt.Printf("Problem spec:\n%v\n", pblob)
+		for _, ph := range snap.Problems {
+			fmt.Printf("Cacheing Problem %d:<<%s>>\n", ph.ProblemId, ph.ProblemSpecHash)
+			_, err = serv.GetBlob(ph.ProblemSpecHash)
+			if err != nil {
+				fmt.Printf("Warning: couldn't retrieve problem spec: %v\n", err)
+			}
+		}
 	},
 }
 
 func init() {
-	RootCmd.AddCommand(problemspecCmd)
-	problemspecCmd.PersistentFlags().IntVar(&problemId, "id", 0, "Problem ID of the problem spec to retrieve.")
+	RootCmd.AddCommand(cacheproblemsCmd)
 }

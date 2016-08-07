@@ -25,6 +25,9 @@ func Whole(n int64) Ratio {
 }
 
 func (r Ratio) String() string {
+	if r.Den == 1 {
+		return fmt.Sprintf("%d", r.Num)
+	}
 	return fmt.Sprintf("%d/%d", r.Num, r.Den)
 }
 
@@ -34,18 +37,26 @@ func (r Ratio) ToFloat() float64 {
 
 func ParseRatio(instr string) (Ratio, error) {
 	parts := strings.Split(instr, "/")
+	if len(parts) == 1 {
+		//no divisions, try parsing as whole number
+		wpart, werr := strconv.ParseInt(instr, 10, 64)
+		if werr != nil {
+			return ZeroRatio, fmt.Errorf("Improper whole number: %v", werr)
+		}
+		return Whole(wpart), nil
+	}
 	if len(parts) != 2 {
-		return ZeroRatio, fmt.Errorf("Improper division placement")
+		return ZeroRatio, fmt.Errorf("Improper division placement: %s", instr)
 	}
 
 	npart, nerr := strconv.ParseInt(parts[0], 10, 64)
 	if nerr != nil {
-		return ZeroRatio, fmt.Errorf("Improper numerator")
+		return ZeroRatio, fmt.Errorf("Improper numerator: %s", instr)
 	}
 
 	dpart, derr := strconv.ParseInt(parts[1], 10, 64)
 	if derr != nil {
-		return ZeroRatio, fmt.Errorf("Improper denominator")
+		return ZeroRatio, fmt.Errorf("Improper denominator: %s", instr)
 	}
 	return Ratio{npart, dpart}.Reduced(), nil
 }

@@ -40,7 +40,6 @@ func (fsb *FoldServerBasic) MakeServerRequest(protocol string, cmdNamePath []str
 	if fsb.useCache && cache {
 		cfs, err := os.Stat(cacheFilename)
 		if err == nil && cfs.Size() > 0 && (cmdNamePath[0] != "snapshot" || cfs.ModTime().Hour() == time.Now().Hour()) {
-			fmt.Printf("(Reading from cache file %s)\n", cacheFilename)
 			bans, err := ioutil.ReadFile(cacheFilename)
 			return string(bans), err
 		}
@@ -171,4 +170,26 @@ func (fsb *FoldServerBasic) Scoreboard() ([]objs.UserState, error) {
 		return u1.Score > u2.Score
 	}).Sort(uservals)
 	return uservals, nil
+}
+
+func (fsb *FoldServerBasic) GetProblemSpec(problemId int) (objs.Problem, error) {
+	blresp, err := fsb.LatestSnapshot()
+	if err != nil {
+		return objs.NoProblem, fmt.Errorf("Error retrieving snapshot: %v", err)
+	}
+	var nph objs.ProblemHeader
+	for _, ph := range blresp.Problems {
+		if ph.ProblemId == problemId {
+			nph = ph
+			break
+		}
+	}
+	if nph.ProblemId == 0 {
+		return objs.NoProblem, fmt.Errorf("Could not find problem id %d", problemId)
+	}
+	pblob, err := fsb.GetBlob(nph.ProblemSpecHash)
+	if err != nil {
+		return objs.NoProblem, fmt.Errorf("Error retrieving snapshot: %v", err)
+	}
+	return objs.ParseProblem(pblob)
 }
