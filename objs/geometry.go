@@ -2,30 +2,31 @@ package objs
 
 import (
 	"fmt"
+	"math/big"
 	"strconv"
 	"strings"
 )
 
 type Point struct {
-	X Ratio
-	Y Ratio
+	X *big.Rat
+	Y *big.Rat
 }
 
 var (
-	Origin        = Point{ZeroRatio, ZeroRatio}
+	Origin        = Point{big.NewRat(0, 1), big.NewRat(0, 1)}
 	NoLine        = Line{Origin, Origin}
 	NoProblem     = Problem{nil, nil}
 	InitialSquare = Polygon{
-		Point{Whole(0), Whole(0)},
-		Point{Whole(1), Whole(0)},
-		Point{Whole(1), Whole(1)},
-		Point{Whole(0), Whole(1)},
+		Point{big.NewRat(0, 1), big.NewRat(0, 1)},
+		Point{big.NewRat(1, 1), big.NewRat(0, 1)},
+		Point{big.NewRat(1, 1), big.NewRat(1, 1)},
+		Point{big.NewRat(0, 1), big.NewRat(1, 1)},
 	}
 	InitialSkeleton = Skeleton{
-		Line{Point{Whole(0), Whole(0)}, Point{Whole(1), Whole(0)}},
-		Line{Point{Whole(1), Whole(0)}, Point{Whole(1), Whole(1)}},
-		Line{Point{Whole(1), Whole(1)}, Point{Whole(0), Whole(1)}},
-		Line{Point{Whole(0), Whole(1)}, Point{Whole(0), Whole(0)}},
+		Line{Point{big.NewRat(0, 1), big.NewRat(0, 1)}, Point{big.NewRat(1, 1), big.NewRat(0, 1)}},
+		Line{Point{big.NewRat(1, 1), big.NewRat(0, 1)}, Point{big.NewRat(1, 1), big.NewRat(1, 1)}},
+		Line{Point{big.NewRat(1, 1), big.NewRat(1, 1)}, Point{big.NewRat(0, 1), big.NewRat(1, 1)}},
+		Line{Point{big.NewRat(0, 1), big.NewRat(1, 1)}, Point{big.NewRat(0, 1), big.NewRat(0, 1)}},
 	}
 )
 
@@ -38,17 +39,44 @@ func ParsePoint(instr string) (Point, error) {
 	if len(parts) != 2 {
 		return Origin, fmt.Errorf("Malformatted point")
 	}
-	xcoord, xerr := ParseRatio(parts[0])
-	if xerr != nil {
-		return Origin, fmt.Errorf("Illegal x-coordinate: %v", xerr)
+	xcoord, xerr := (&big.Rat{}).SetString(parts[0])
+	if !xerr {
+		return Origin, fmt.Errorf("Illegal x-coordinate: %v", parts[0])
 	}
 
-	ycoord, yerr := ParseRatio(parts[1])
-	if yerr != nil {
-		return Origin, fmt.Errorf("Illegal y-coordinate: %v", yerr)
+	ycoord, yerr := (&big.Rat{}).SetString(parts[1])
+	if !yerr {
+		return Origin, fmt.Errorf("Illegal y-coordinate: %v", parts[1])
 	}
 
 	return Point{xcoord, ycoord}, nil
+}
+
+func (p Point) Add(oth Point) Point {
+	nx := big.NewRat(0, 1)
+	ny := big.NewRat(0, 1)
+	return Point{
+		nx.Add(p.X, oth.X),
+		ny.Add(p.Y, oth.Y),
+	}
+}
+
+func (p Point) Sub(oth Point) Point {
+	nx := big.NewRat(0, 1)
+	ny := big.NewRat(0, 1)
+	return Point{
+		nx.Sub(p.X, oth.X),
+		ny.Sub(p.Y, oth.Y),
+	}
+}
+
+func (p Point) Mult(scr *big.Rat) Point {
+	nx := big.NewRat(0, 1)
+	ny := big.NewRat(0, 1)
+	return Point{
+		nx.Mul(p.X, scr),
+		ny.Mul(p.Y, scr),
+	}
 }
 
 type Polygon []Point
